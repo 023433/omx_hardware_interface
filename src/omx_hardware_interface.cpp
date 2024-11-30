@@ -213,10 +213,10 @@ void HardwareInterface::registerActuatorInterfaces(){
   }
 
 
-  // if(!loadDynamixels()){
-  //   RCLCPP_ERROR(logger, "Please check Dynamixel ID or BaudRate");
-  //   return;
-  // }
+  if(!loadDynamixels()){
+    RCLCPP_ERROR(_logger, "Please check Dynamixel ID or BaudRate");
+    return;
+  }
 
   // if(!initDynamixels()){
   //   RCLCPP_ERROR(logger, "Please check control table (http://emanual.robotis.com/#control-table)");
@@ -279,7 +279,7 @@ bool HardwareInterface::initWorkbench(const std::string port_name, const uint32_
   const char* log;
 
   result = _dxl_wb->init(port_name.c_str(), baud_rate, &log);
-  if (result == false){
+  if(result == false){
     RCLCPP_ERROR(_logger, "%s", log);
   }
 
@@ -296,19 +296,20 @@ bool HardwareInterface::getDynamixelsInfo(const std::string yaml_file){
     return false;
   }
 
-  for (YAML::const_iterator it_file = dynamixel.begin(); it_file != dynamixel.end(); it_file++){
+  for(YAML::const_iterator it_file = dynamixel.begin(); it_file != dynamixel.end(); it_file++){
     std::string name = it_file->first.as<std::string>();
-    if (name.size() == 0){
+    if(name.size() == 0){
       continue;
     }
 
     YAML::Node item = dynamixel[name];
-    for (YAML::const_iterator it_item = item.begin(); it_item != item.end(); it_item++){
+    for(YAML::const_iterator it_item = item.begin(); it_item != item.end(); it_item++){
       std::string item_name = it_item->first.as<std::string>();
       int32_t value = it_item->second.as<int32_t>();
 
-      if (item_name == "ID")
+      if(item_name == "ID"){
         _dynamixel[name] = value;
+      }
 
       ItemValue item_value = {item_name, value};
       std::pair<std::string, ItemValue> info(name, item_value);
@@ -320,7 +321,24 @@ bool HardwareInterface::getDynamixelsInfo(const std::string yaml_file){
   return true;
 }
 
+bool HardwareInterface::loadDynamixels(void){
+  bool result = false;
+  const char* log;
 
+  for (auto const& dxl:_dynamixel){
+    uint16_t model_number = 0;
+    result = _dxl_wb->ping((uint8_t)dxl.second, &model_number, &log);
+    if(result == false){
+      RCLCPP_ERROR(_logger, "%s", log);
+      RCLCPP_ERROR(_logger, "Can't find Dynamixel ID '%d'", dxl.second);
+      return result;
+    }else{
+      RCLCPP_INFO(_logger, "Name : %s, ID : %d, Model Number : %d", dxl.first.c_str(), dxl.second, model_number);
+    }
+  }
+
+  return result;
+}
 
 
 }  // namespace omx_hardware_interface
