@@ -164,7 +164,6 @@ void HardwareInterface::write(){
   uint8_t id_cnt = 0;
 
   int32_t _dynamixelposition[_dynamixel.size()];
-  int32_t _dynamixelvelocity[_dynamixel.size()];
   int32_t _dynamixeleffort[_dynamixel.size()];
 
   if(strcmp(_interface.c_str(), "position") == 0){
@@ -370,57 +369,54 @@ bool HardwareInterface::initDynamixels(void){
 }
 
 bool HardwareInterface::initControlItems(void){
-  bool result = false;
-  const char* log = NULL;
-
   auto it = _dynamixel.begin();
 
-  const ControlItem *goal_position = _dxl_wb->getItemInfo(it->second, "Goal_Position");
+  const ControlItem *goal_position = _dxl_wb->getItemInfo((uint8_t)it->second, "Goal_Position");
 
   if(goal_position == NULL) {
     return false;
   }
 
-  const ControlItem *goal_velocity = _dxl_wb->getItemInfo(it->second, "Goal_Velocity");
+  const ControlItem *goal_velocity = _dxl_wb->getItemInfo((uint8_t)it->second, "Goal_Velocity");
   
   if(goal_velocity == NULL){
-    goal_velocity = _dxl_wb->getItemInfo(it->second, "Moving_Speed");
+    goal_velocity = _dxl_wb->getItemInfo((uint8_t)it->second, "Moving_Speed");
   }
 
   if(goal_velocity == NULL){
     return false;
   }
 
-  const ControlItem *goal_current = _dxl_wb->getItemInfo(it->second, "Goal_Current");
+  const ControlItem *goal_current = _dxl_wb->getItemInfo((uint8_t)it->second, "Goal_Current");
   
   if(goal_current == NULL){
-    goal_current = _dxl_wb->getItemInfo(it->second, "Present_Load");
+    goal_current = _dxl_wb->getItemInfo((uint8_t)it->second, "Present_Load");
   }
 
   if(goal_current == NULL){
     return false;
   }
 
-  const ControlItem *present_position = _dxl_wb->getItemInfo(it->second, "Present_Position");
+  const ControlItem *present_position = _dxl_wb->getItemInfo((uint8_t)it->second, "Present_Position");
   
   if(present_position == NULL){
     return false;
   }
 
-  const ControlItem *present_velocity = _dxl_wb->getItemInfo(it->second, "Present_Velocity");
+  const ControlItem *present_velocity = _dxl_wb->getItemInfo((uint8_t)it->second, "Present_Velocity");
   
   if(present_velocity == NULL){
-    present_velocity = _dxl_wb->getItemInfo(it->second, "Present_Speed");
+    present_velocity = _dxl_wb->getItemInfo((uint8_t)it->second, "Present_Speed");
   }
 
   if(present_velocity == NULL){
     return false;
   }
 
-  const ControlItem *present_current = _dxl_wb->getItemInfo(it->second, "Present_Current");
+  const ControlItem *present_current = _dxl_wb->getItemInfo((uint8_t)it->second, "Present_Current");
   
   if(present_current == NULL){
-    present_current = _dxl_wb->getItemInfo(it->second, "Present_Load");
+    present_current = _dxl_wb->getItemInfo((uint8_t)it->second, "Present_Load");
   }
 
   if(present_current == NULL){
@@ -443,7 +439,7 @@ bool HardwareInterface::initSDKHandlers(void){
   bool result = false;
   const char* log = NULL;
 
-  auto it = _dynamixel.begin();
+  _dynamixel.begin();
 
   result = _dxl_wb->addSyncWriteHandler(_control_items["Goal_Position"]->address, _control_items["Goal_Position"]->data_length, &log);
 
@@ -477,11 +473,11 @@ bool HardwareInterface::initSDKHandlers(void){
 
     /* As some models have an empty space between Present_Velocity and Present Current, read_length is modified as below.*/
     // uint16_t read_length = _control_items["Present_Position"]->data_length + _control_items["Present_Velocity"]->data_length + _control_items["Present_Current"]->data_length;
-    uint16_t read_length = _control_items["Present_Position"]->data_length + _control_items["Present_Velocity"]->data_length + _control_items["Present_Current"]->data_length+2;
+    int read_length = _control_items["Present_Position"]->data_length + _control_items["Present_Velocity"]->data_length + _control_items["Present_Current"]->data_length + 2;
 
     result = _dxl_wb->addSyncReadHandler(
       start_address,
-      read_length,
+      (uint16_t)read_length,
       &log
     );
 
