@@ -278,7 +278,7 @@ bool HardwareInterface::initWorkbench(const std::string port_name, const uint32_
   bool result = false;
   const char* log;
 
-  result = _dxl_wb->begin(port_name.c_str(), baud_rate, &log);
+  result = _dxl_wb->init(port_name.c_str(), baud_rate, &log);
   if (result == false){
     RCLCPP_ERROR(_logger, "%s", log);
   }
