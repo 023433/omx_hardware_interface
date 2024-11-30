@@ -218,10 +218,10 @@ void HardwareInterface::registerActuatorInterfaces(){
     return;
   }
 
-  // if(!initDynamixels()){
-  //   RCLCPP_ERROR(logger, "Please check control table (http://emanual.robotis.com/#control-table)");
-  //   return;
-  // }
+  if(!initDynamixels()){
+    RCLCPP_ERROR(_logger, "Please check control table (http://emanual.robotis.com/#control-table)");
+    return;
+  }
 
   // if(!initControlItems()){
   //   RCLCPP_ERROR(logger, "Please check control items");
@@ -325,7 +325,7 @@ bool HardwareInterface::loadDynamixels(void){
   bool result = false;
   const char* log;
 
-  for (auto const& dxl:_dynamixel){
+  for(auto const& dxl:_dynamixel){
     uint16_t model_number = 0;
     result = _dxl_wb->ping((uint8_t)dxl.second, &model_number, &log);
     if(result == false){
@@ -339,6 +339,36 @@ bool HardwareInterface::loadDynamixels(void){
 
   return result;
 }
+
+
+bool HardwareInterface::initDynamixels(void){
+  const char* log;
+
+  for(auto const& dxl:_dynamixel){
+    _dxl_wb->torqueOff((uint8_t)dxl.second);
+
+    for(auto const& info:_dynamixel_info){
+      if(dxl.first == info.first){
+        if(info.second.item_name != "ID" && info.second.item_name != "Baud_Rate"){
+          bool result = _dxl_wb->itemWrite((uint8_t)dxl.second, info.second.item_name.c_str(), info.second.value, &log);
+          if(result == false){
+            RCLCPP_ERROR(_logger, "%s", log);
+            RCLCPP_ERROR(_logger, "Failed to write value[%d] on items[%s] to Dynamixel[Name : %s, ID : %d]", info.second.value, info.second.item_name.c_str(), dxl.first.c_str(), dxl.second);
+            return false;
+          }
+        }
+      }
+    }
+  }
+
+  // Torque On after setting up all servo
+  for (auto const& dxl:_dynamixel){
+    _dxl_wb->torqueOn((uint8_t)dxl.second);
+  }
+
+  return true;
+}
+
 
 
 }  // namespace omx_hardware_interface

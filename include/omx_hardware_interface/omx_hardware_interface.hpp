@@ -69,7 +69,7 @@ private:
   bool initWorkbench(const std::string port_name, const uint32_t baud_rate);
   bool getDynamixelsInfo(const std::string yaml_file);
   bool loadDynamixels(void);
-  // bool initDynamixels(void);
+  bool initDynamixels(void);
   // bool initControlItems(void);
   // bool initSDKHandlers(void);
 
