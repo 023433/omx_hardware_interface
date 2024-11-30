@@ -439,6 +439,61 @@ bool HardwareInterface::initControlItems(void){
 }
 
 
+bool HardwareInterface::initSDKHandlers(void){
+  bool result = false;
+  const char* log = NULL;
+
+  auto it = _dynamixel.begin();
+
+  result = _dxl_wb->addSyncWriteHandler(_control_items["Goal_Position"]->address, _control_items["Goal_Position"]->data_length, &log);
+
+  if(result == false){
+    RCLCPP_ERROR(_logger, "%s", log);
+    return result;
+  }else{
+    RCLCPP_INFO(_logger, "%s", log);
+  }
+
+  result = _dxl_wb->addSyncWriteHandler(_control_items["Goal_Velocity"]->address, _control_items["Goal_Velocity"]->data_length, &log);
+
+  if(result == false){
+    RCLCPP_ERROR(_logger, "%s", log);
+    return result;
+  }else{
+    RCLCPP_INFO(_logger, "%s", log);
+  }
+
+  result = _dxl_wb->addSyncWriteHandler(_control_items["Goal_Current"]->address, _control_items["Goal_Current"]->data_length, &log);
+  
+  if(result == false){
+    RCLCPP_ERROR(_logger, "%s", log);
+    return result;
+  }else{
+    RCLCPP_INFO(_logger, "%s", log);
+  }
+
+  if(_dxl_wb->getProtocolVersion() == 2.0f){
+    uint16_t start_address = std::min(_control_items["Present_Position"]->address, _control_items["Present_Current"]->address);
+
+    /* As some models have an empty space between Present_Velocity and Present Current, read_length is modified as below.*/
+    // uint16_t read_length = _control_items["Present_Position"]->data_length + _control_items["Present_Velocity"]->data_length + _control_items["Present_Current"]->data_length;
+    uint16_t read_length = _control_items["Present_Position"]->data_length + _control_items["Present_Velocity"]->data_length + _control_items["Present_Current"]->data_length+2;
+
+    result = _dxl_wb->addSyncReadHandler(
+      start_address,
+      read_length,
+      &log
+    );
+
+    if(result == false){
+      RCLCPP_ERROR(_logger, "%s", log);
+      return result;
+    }
+  }
+
+  return result;
+}
+
 
 
 }  // namespace omx_hardware_interface

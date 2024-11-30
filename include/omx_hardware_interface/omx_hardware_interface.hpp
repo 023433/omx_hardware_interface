@@ -71,7 +71,7 @@ private:
   bool loadDynamixels(void);
   bool initDynamixels(void);
   bool initControlItems(void);
-  // bool initSDKHandlers(void);
+  bool initSDKHandlers(void);
 
   rclcpp::Node::SharedPtr& _node;
   rclcpp::Logger _logger;
