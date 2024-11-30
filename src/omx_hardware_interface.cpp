@@ -249,7 +249,7 @@ void HardwareInterface::registerControlInterfaces(){
     // initialize joint vector
     Joint joint;
     joints_[iter->second - 1] = joint;
-    RCLCPP_ERROR(logger_, "joint_name : %s, servo ID: %d", iter->first.c_str(), iter->second);
+    RCLCPP_INFO(logger_, "joint_name : %s, servo ID: %d", iter->first.c_str(), iter->second);
 
     // // connect and register the joint state interface
     // hardware_interface::CommandInterface joint_state_handle(iter->first.c_str(),
@@ -327,7 +327,6 @@ bool HardwareInterface::loadDynamixels(void){
   for(auto const& dxl:dynamixel_){
     uint16_t model_number = 0;
     result = dxl_wb_->ping((uint8_t)dxl.second, &model_number, &log);
-    dxl_wb_->ledOn((uint8_t)dxl.second);
     if(result == false){
       RCLCPP_ERROR(logger_, "%s", log);
       RCLCPP_ERROR(logger_, "Can't find Dynamixel ID '%d'", dxl.second);
