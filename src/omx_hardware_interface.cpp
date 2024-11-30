@@ -23,7 +23,7 @@
 namespace omx_hardware_interface
 {
 
-HardwareInterface::HardwareInterface(rclcpp::Node::SharedPtr& node) : _node(node), _logger(node->get_logger()){
+HardwareInterface::HardwareInterface(rclcpp::Node::SharedPtr& node) : node_(node), logger_(node->get_logger()){
     /************************************************************
   ** Initialize ROS parameters
   ************************************************************/
@@ -36,22 +36,22 @@ HardwareInterface::HardwareInterface(rclcpp::Node::SharedPtr& node) : _node(node
   ** Register Interfaces
   ************************************************************/
 
-  _node->declare_parameter<std::string>("usb_port", "/dev/ttyUSB0");
-  _node->declare_parameter<int>("baud_rate", 1000000);
-  _node->declare_parameter<std::string>("yaml_file", "");
-  _node->declare_parameter<std::string>("interface", "position");
+  node_->declare_parameter<std::string>("usb_port", "/dev/ttyUSB0");
+  node_->declare_parameter<int>("baud_rate", 1000000);
+  node_->declare_parameter<std::string>("yaml_file", "");
+  node_->declare_parameter<std::string>("interface", "position");
 
-  _port_name = node->get_parameter("usb_port").as_string();
-  _baud_rate = node->get_parameter("baud_rate").as_int();
-  _yaml_file = node->get_parameter("yaml_file").as_string();
+  port_name_ = node->get_parameter("usb_port").as_string();
+  baud_rate_ = node->get_parameter("baud_rate").as_int();
+  yaml_file_ = node->get_parameter("yaml_file").as_string();
   _interface = node->get_parameter("interface").as_string();
 
 
   // 로그 출력
-  RCLCPP_INFO(_logger, "usb_port: %s", _port_name.c_str());
-  RCLCPP_INFO(_logger, "baud_rate: %ld", _baud_rate);
-  RCLCPP_INFO(_logger, "yaml_file: %s", _yaml_file.c_str());
-  RCLCPP_INFO(_logger, "interface: %s", _interface.c_str());
+  RCLCPP_INFO(logger_, "usb_port: %s", port_name_.c_str());
+  RCLCPP_INFO(logger_, "baud_rate: %ld", baud_rate_);
+  RCLCPP_INFO(logger_, "yaml_file: %s", yaml_file_.c_str());
+  RCLCPP_INFO(logger_, "interface: %s", _interface.c_str());
   registerActuatorInterfaces();
   // registerControlInterfaces();
 }
@@ -59,9 +59,9 @@ HardwareInterface::HardwareInterface(rclcpp::Node::SharedPtr& node) : _node(node
 void HardwareInterface::read(){
   bool result = false;
   const char* log = NULL;
-  size_t _dynamixelsize = _dynamixel.size();
+  size_t _dynamixelsize = dynamixel_.size();
 
-  RCLCPP_INFO(_logger, "_dynamixelsize: %ld", _dynamixelsize);
+  RCLCPP_INFO(logger_, "_dynamixelsize: %ld", _dynamixelsize);
 
   int32_t get_position[_dynamixelsize];
   int32_t get_velocity[_dynamixelsize];
@@ -73,12 +73,12 @@ void HardwareInterface::read(){
 
   uint8_t sync_read_handler = 0; // 0 for present position, velocity, current
 
-  for(auto const& dxl:_dynamixel){
+  for(auto const& dxl:dynamixel_){
     name_array[id_cnt] = dxl.first.c_str();
     id_array[id_cnt++] = (uint8_t)dxl.second;
   }
 
-  result = _dxl_wb->syncRead(
+  result = dxl_wb_->syncRead(
     sync_read_handler,
     id_array,
     static_cast<uint8_t>(_dynamixelsize),
@@ -86,72 +86,72 @@ void HardwareInterface::read(){
   );
 
   if(result == false){
-    RCLCPP_ERROR(_logger, "%s", log);
+    RCLCPP_ERROR(logger_, "%s", log);
   }
 
-  result = _dxl_wb->getSyncReadData(
+  result = dxl_wb_->getSyncReadData(
     sync_read_handler,
     id_array,
     id_cnt,
-    _control_items["Present_Current"]->address,
-    _control_items["Present_Current"]->data_length,
+    control_items_["Present_Current"]->address,
+    control_items_["Present_Current"]->data_length,
     get_current,
     &log
   );
 
   if(result == false){
-    RCLCPP_ERROR(_logger, "%s", log);
+    RCLCPP_ERROR(logger_, "%s", log);
   }
 
-  result = _dxl_wb->getSyncReadData(
+  result = dxl_wb_->getSyncReadData(
     sync_read_handler,
     id_array,
     id_cnt,
-    _control_items["Present_Velocity"]->address,
-    _control_items["Present_Velocity"]->data_length,
+    control_items_["Present_Velocity"]->address,
+    control_items_["Present_Velocity"]->data_length,
     get_velocity,
     &log
   );
 
   if(result == false){
-    RCLCPP_ERROR(_logger, "%s", log);
+    RCLCPP_ERROR(logger_, "%s", log);
   }
 
-  result = _dxl_wb->getSyncReadData(
+  result = dxl_wb_->getSyncReadData(
     sync_read_handler,
     id_array,
     id_cnt,
-    _control_items["Present_Position"]->address,
-    _control_items["Present_Position"]->data_length,
+    control_items_["Present_Position"]->address,
+    control_items_["Present_Position"]->data_length,
     get_position,
     &log
   );
 
   if(result == false){
-    RCLCPP_ERROR(_logger, "%s", log);
+    RCLCPP_ERROR(logger_, "%s", log);
   }
 
   for(uint8_t index = 0; index < id_cnt; index++){
     // Position
     int arIdx = id_array[index]-1;
 
-    _joints[arIdx].position = _dxl_wb->convertValue2Radian((uint8_t)id_array[index], (int32_t)get_position[index]);
+    joints_[arIdx].position = dxl_wb_->convertValue2Radian((uint8_t)id_array[index], (int32_t)get_position[index]);
 
     if(strcmp(name_array[index].c_str(), "gripper") == 0){
-      _joints[arIdx].position /= 150.0;
+      joints_[arIdx].position /= 150.0;
     }
 
     // Velocity
-    _joints[arIdx].velocity = _dxl_wb->convertValue2Velocity((uint8_t)id_array[index], (int32_t)get_velocity[index]);
+    joints_[arIdx].velocity = dxl_wb_->convertValue2Velocity((uint8_t)id_array[index], (int32_t)get_velocity[index]);
 
     // Effort
-    if(strcmp(_dxl_wb->getModelName((uint8_t)id_array[index]), "XL-320") == 0){
-      _joints[arIdx].effort = _dxl_wb->convertValue2Load((int16_t)get_current[index]);
+    if(strcmp(dxl_wb_->getModelName((uint8_t)id_array[index]), "XL-320") == 0){
+      joints_[arIdx].effort = dxl_wb_->convertValue2Load((int16_t)get_current[index]);
     }else{
-      _joints[arIdx].effort = _dxl_wb->convertValue2Current((int16_t)get_current[index]) * (1.78e-03);
+      joints_[arIdx].effort = dxl_wb_->convertValue2Current((int16_t)get_current[index]) * (1.78e-03);
     }
 
-    _joints[arIdx].position_command = _joints[arIdx].position;
+    joints_[arIdx].position_command = joints_[arIdx].position;
   }
 
 }
@@ -160,65 +160,65 @@ void HardwareInterface::write(){
   bool result = false;
   const char* log = NULL;
 
-  uint8_t id_array[_dynamixel.size()];
+  uint8_t id_array[dynamixel_.size()];
   uint8_t id_cnt = 0;
 
-  int32_t _dynamixelposition[_dynamixel.size()];
-  int32_t _dynamixeleffort[_dynamixel.size()];
+  int32_t _dynamixelposition[dynamixel_.size()];
+  int32_t _dynamixeleffort[dynamixel_.size()];
 
   if(strcmp(_interface.c_str(), "position") == 0){
-    for(auto const& dxl:_dynamixel){
+    for(auto const& dxl:dynamixel_){
       id_array[id_cnt] = (uint8_t)dxl.second;
-      _dynamixelposition[id_cnt] = _dxl_wb->convertRadian2Value((uint8_t)dxl.second, static_cast<float>(_joints[(uint8_t)dxl.second-1].position_command));
+      _dynamixelposition[id_cnt] = dxl_wb_->convertRadian2Value((uint8_t)dxl.second, static_cast<float>(joints_[(uint8_t)dxl.second-1].position_command));
 
       if(strcmp(dxl.first.c_str(), "gripper") == 0){
-        _dynamixelposition[id_cnt] = _dxl_wb->convertRadian2Value((uint8_t)dxl.second, static_cast<float>(_joints[(uint8_t)dxl.second-1].position_command * 150.0));
+        _dynamixelposition[id_cnt] = dxl_wb_->convertRadian2Value((uint8_t)dxl.second, static_cast<float>(joints_[(uint8_t)dxl.second-1].position_command * 150.0));
       }
       id_cnt ++;
     }
     uint8_t sync_write_handler = 0; // 0: position, 1: velocity, 2: effort
-    result = _dxl_wb->syncWrite(sync_write_handler, id_array, id_cnt, _dynamixelposition, 1, &log);
+    result = dxl_wb_->syncWrite(sync_write_handler, id_array, id_cnt, _dynamixelposition, 1, &log);
   }else if(strcmp(_interface.c_str(), "effort") == 0) {
-    for(auto const& dxl:_dynamixel){
+    for(auto const& dxl:dynamixel_){
       id_array[id_cnt] = (uint8_t)dxl.second;
-      _dynamixeleffort[id_cnt] = _dxl_wb->convertCurrent2Value((uint8_t)dxl.second, static_cast<float>(_joints[(uint8_t)dxl.second-1].effort_command / (1.78e-03)));
+      _dynamixeleffort[id_cnt] = dxl_wb_->convertCurrent2Value((uint8_t)dxl.second, static_cast<float>(joints_[(uint8_t)dxl.second-1].effort_command / (1.78e-03)));
 
       if(strcmp(dxl.first.c_str(), "gripper") == 0){
-        _dynamixelposition[id_cnt] = _dxl_wb->convertRadian2Value((uint8_t)dxl.second, static_cast<float>(_joints[(uint8_t)dxl.second-1].position_command * 150.0));
+        _dynamixelposition[id_cnt] = dxl_wb_->convertRadian2Value((uint8_t)dxl.second, static_cast<float>(joints_[(uint8_t)dxl.second-1].position_command * 150.0));
       }
       id_cnt ++;
     }
     uint8_t sync_write_handler = 2; // 0: position, 1: velocity, 2: effort
-    result = _dxl_wb->syncWrite(sync_write_handler, id_array, id_cnt, _dynamixeleffort, 1, &log);
+    result = dxl_wb_->syncWrite(sync_write_handler, id_array, id_cnt, _dynamixeleffort, 1, &log);
   }
 
   if(result == false){
-    RCLCPP_ERROR(_logger, "%s", log);
+    RCLCPP_ERROR(logger_, "%s", log);
   }
 }
 
 
 void HardwareInterface::registerActuatorInterfaces(){  
-  _dxl_wb = new DynamixelWorkbench;
+  dxl_wb_ = new DynamixelWorkbench;
 
-  if(!initWorkbench(_port_name, (uint32_t)_baud_rate)){
-    RCLCPP_ERROR(_logger, "Please check USB port name");
+  if(!initWorkbench(port_name_, (uint32_t)baud_rate_)){
+    RCLCPP_ERROR(logger_, "Please check USB port name");
     return;
   }
 
-  if(!getDynamixelsInfo(_yaml_file)){
-    RCLCPP_ERROR(_logger, "Please check YAML file");
+  if(!getDynamixelsInfo(yaml_file_)){
+    RCLCPP_ERROR(logger_, "Please check YAML file");
     return;
   }
 
 
   if(!loadDynamixels()){
-    RCLCPP_ERROR(_logger, "Please check Dynamixel ID or BaudRate");
+    RCLCPP_ERROR(logger_, "Please check Dynamixel ID or BaudRate");
     return;
   }
 
   if(!initDynamixels()){
-    RCLCPP_ERROR(_logger, "Please check control table (http://emanual.robotis.com/#control-table)");
+    RCLCPP_ERROR(logger_, "Please check control table (http://emanual.robotis.com/#control-table)");
     return;
   }
 
@@ -237,33 +237,33 @@ void HardwareInterface::registerActuatorInterfaces(){
 void HardwareInterface::registerControlInterfaces(){
   // resize vector
   uint8_t joint_size = 0;
-  for(auto const& dxl:_dynamixel){
+  for(auto const& dxl:dynamixel_){
     if(joint_size < (uint8_t)dxl.second){
       joint_size = (uint8_t)dxl.second;
     }
   }
 
-  _joints.resize(joint_size);
+  joints_.resize(joint_size);
 
-  for(auto iter = _dynamixel.begin(); iter != _dynamixel.end(); iter++){
+  for(auto iter = dynamixel_.begin(); iter != dynamixel_.end(); iter++){
     // initialize joint vector
     Joint joint;
-    _joints[iter->second - 1] = joint;
-    RCLCPP_ERROR(_logger, "joint_name : %s, servo ID: %d", iter->first.c_str(), iter->second);
+    joints_[iter->second - 1] = joint;
+    RCLCPP_ERROR(logger_, "joint_name : %s, servo ID: %d", iter->first.c_str(), iter->second);
 
     // // connect and register the joint state interface
     // hardware_interface::CommandInterface joint_state_handle(iter->first.c_str(),
-    //                                                         &_joints[iter->second - 1].position,
-    //                                                         &_joints[iter->second - 1].velocity,
-    //                                                         &_joints[iter->second - 1].effort);
+    //                                                         &joints_[iter->second - 1].position,
+    //                                                         &joints_[iter->second - 1].velocity,
+    //                                                         &joints_[iter->second - 1].effort);
     // joint_state_interface_.registerHandle(joint_state_handle);
 
     // // connect and register the joint position, velocity and effort interface
-    // hardware_interface::JointHandle position_joint_handle(joint_state_handle, &_joints[iter->second - 1].position_command);
+    // hardware_interface::JointHandle position_joint_handle(joint_state_handle, &joints_[iter->second - 1].position_command);
     // position_joint_interface_.registerHandle(position_joint_handle);
-    // hardware_interface::JointHandle velocity_joint_handle(joint_state_handle, &_joints[iter->second - 1].velocity_command);
+    // hardware_interface::JointHandle velocity_joint_handle(joint_state_handle, &joints_[iter->second - 1].velocity_command);
     // velocity_joint_interface_.registerHandle(velocity_joint_handle);
-    // hardware_interface::JointHandle effort_joint_handle(joint_state_handle, &_joints[iter->second - 1].effort_command);
+    // hardware_interface::JointHandle effort_joint_handle(joint_state_handle, &joints_[iter->second - 1].effort_command);
     // effort_joint_interface_.registerHandle(effort_joint_handle);
   }
 
@@ -277,9 +277,9 @@ bool HardwareInterface::initWorkbench(const std::string port_name, const uint32_
   bool result = false;
   const char* log;
 
-  result = _dxl_wb->init(port_name.c_str(), baud_rate, &log);
+  result = dxl_wb_->init(port_name.c_str(), baud_rate, &log);
   if(result == false){
-    RCLCPP_ERROR(_logger, "%s", log);
+    RCLCPP_ERROR(logger_, "%s", log);
   }
 
   return result;
@@ -291,7 +291,7 @@ bool HardwareInterface::getDynamixelsInfo(const std::string yaml_file){
   dynamixel = YAML::LoadFile(yaml_file.c_str());
 
   if(dynamixel.IsNull()){
-    RCLCPP_ERROR(_logger, "Please check YAML file");
+    RCLCPP_ERROR(logger_, "Please check YAML file");
     return false;
   }
 
@@ -307,13 +307,13 @@ bool HardwareInterface::getDynamixelsInfo(const std::string yaml_file){
       int32_t value = it_item->second.as<int32_t>();
 
       if(item_name == "ID"){
-        _dynamixel[name] = value;
+        dynamixel_[name] = value;
       }
 
       ItemValue item_value = {item_name, value};
       std::pair<std::string, ItemValue> info(name, item_value);
 
-      _dynamixel_info.push_back(info);
+      dynamixel_info_.push_back(info);
     }
   }
 
@@ -324,15 +324,15 @@ bool HardwareInterface::loadDynamixels(void){
   bool result = false;
   const char* log;
 
-  for(auto const& dxl:_dynamixel){
+  for(auto const& dxl:dynamixel_){
     uint16_t model_number = 0;
-    result = _dxl_wb->ping((uint8_t)dxl.second, &model_number, &log);
+    result = dxl_wb_->ping((uint8_t)dxl.second, &model_number, &log);
     if(result == false){
-      RCLCPP_ERROR(_logger, "%s", log);
-      RCLCPP_ERROR(_logger, "Can't find Dynamixel ID '%d'", dxl.second);
+      RCLCPP_ERROR(logger_, "%s", log);
+      RCLCPP_ERROR(logger_, "Can't find Dynamixel ID '%d'", dxl.second);
       return result;
     }else{
-      RCLCPP_INFO(_logger, "Name : %s, ID : %d, Model Number : %d", dxl.first.c_str(), dxl.second, model_number);
+      RCLCPP_INFO(logger_, "Name : %s, ID : %d, Model Number : %d", dxl.first.c_str(), dxl.second, model_number);
     }
   }
 
@@ -343,16 +343,16 @@ bool HardwareInterface::loadDynamixels(void){
 bool HardwareInterface::initDynamixels(void){
   const char* log;
 
-  for(auto const& dxl:_dynamixel){
-    _dxl_wb->torqueOff((uint8_t)dxl.second);
+  for(auto const& dxl:dynamixel_){
+    dxl_wb_->torqueOff((uint8_t)dxl.second);
 
-    for(auto const& info:_dynamixel_info){
+    for(auto const& info:dynamixel_info_){
       if(dxl.first == info.first){
         if(info.second.item_name != "ID" && info.second.item_name != "Baud_Rate"){
-          bool result = _dxl_wb->itemWrite((uint8_t)dxl.second, info.second.item_name.c_str(), info.second.value, &log);
+          bool result = dxl_wb_->itemWrite((uint8_t)dxl.second, info.second.item_name.c_str(), info.second.value, &log);
           if(result == false){
-            RCLCPP_ERROR(_logger, "%s", log);
-            RCLCPP_ERROR(_logger, "Failed to write value[%d] on items[%s] to Dynamixel[Name : %s, ID : %d]", info.second.value, info.second.item_name.c_str(), dxl.first.c_str(), dxl.second);
+            RCLCPP_ERROR(logger_, "%s", log);
+            RCLCPP_ERROR(logger_, "Failed to write value[%d] on items[%s] to Dynamixel[Name : %s, ID : %d]", info.second.value, info.second.item_name.c_str(), dxl.first.c_str(), dxl.second);
             return false;
           }
         }
@@ -361,75 +361,75 @@ bool HardwareInterface::initDynamixels(void){
   }
 
   // Torque On after setting up all servo
-  for (auto const& dxl:_dynamixel){
-    _dxl_wb->torqueOn((uint8_t)dxl.second);
+  for (auto const& dxl:dynamixel_){
+    dxl_wb_->torqueOn((uint8_t)dxl.second);
   }
 
   return true;
 }
 
 bool HardwareInterface::initControlItems(void){
-  auto it = _dynamixel.begin();
+  auto it = dynamixel_.begin();
 
-  const ControlItem *goal_position = _dxl_wb->getItemInfo((uint8_t)it->second, "Goal_Position");
+  const ControlItem *goal_position = dxl_wb_->getItemInfo((uint8_t)it->second, "Goal_Position");
 
   if(goal_position == NULL) {
     return false;
   }
 
-  const ControlItem *goal_velocity = _dxl_wb->getItemInfo((uint8_t)it->second, "Goal_Velocity");
+  const ControlItem *goal_velocity = dxl_wb_->getItemInfo((uint8_t)it->second, "Goal_Velocity");
   
   if(goal_velocity == NULL){
-    goal_velocity = _dxl_wb->getItemInfo((uint8_t)it->second, "Moving_Speed");
+    goal_velocity = dxl_wb_->getItemInfo((uint8_t)it->second, "Moving_Speed");
   }
 
   if(goal_velocity == NULL){
     return false;
   }
 
-  const ControlItem *goal_current = _dxl_wb->getItemInfo((uint8_t)it->second, "Goal_Current");
+  const ControlItem *goal_current = dxl_wb_->getItemInfo((uint8_t)it->second, "Goal_Current");
   
   if(goal_current == NULL){
-    goal_current = _dxl_wb->getItemInfo((uint8_t)it->second, "Present_Load");
+    goal_current = dxl_wb_->getItemInfo((uint8_t)it->second, "Present_Load");
   }
 
   if(goal_current == NULL){
     return false;
   }
 
-  const ControlItem *present_position = _dxl_wb->getItemInfo((uint8_t)it->second, "Present_Position");
+  const ControlItem *present_position = dxl_wb_->getItemInfo((uint8_t)it->second, "Present_Position");
   
   if(present_position == NULL){
     return false;
   }
 
-  const ControlItem *present_velocity = _dxl_wb->getItemInfo((uint8_t)it->second, "Present_Velocity");
+  const ControlItem *present_velocity = dxl_wb_->getItemInfo((uint8_t)it->second, "Present_Velocity");
   
   if(present_velocity == NULL){
-    present_velocity = _dxl_wb->getItemInfo((uint8_t)it->second, "Present_Speed");
+    present_velocity = dxl_wb_->getItemInfo((uint8_t)it->second, "Present_Speed");
   }
 
   if(present_velocity == NULL){
     return false;
   }
 
-  const ControlItem *present_current = _dxl_wb->getItemInfo((uint8_t)it->second, "Present_Current");
+  const ControlItem *present_current = dxl_wb_->getItemInfo((uint8_t)it->second, "Present_Current");
   
   if(present_current == NULL){
-    present_current = _dxl_wb->getItemInfo((uint8_t)it->second, "Present_Load");
+    present_current = dxl_wb_->getItemInfo((uint8_t)it->second, "Present_Load");
   }
 
   if(present_current == NULL){
     return false;
   }
 
-  _control_items["Goal_Position"] = goal_position;
-  _control_items["Goal_Velocity"] = goal_velocity;
-  _control_items["Goal_Current"] = goal_current;
+  control_items_["Goal_Position"] = goal_position;
+  control_items_["Goal_Velocity"] = goal_velocity;
+  control_items_["Goal_Current"] = goal_current;
 
-  _control_items["Present_Position"] = present_position;
-  _control_items["Present_Velocity"] = present_velocity;
-  _control_items["Present_Current"] = present_current;
+  control_items_["Present_Position"] = present_position;
+  control_items_["Present_Velocity"] = present_velocity;
+  control_items_["Present_Current"] = present_current;
 
   return true;
 }
@@ -439,50 +439,50 @@ bool HardwareInterface::initSDKHandlers(void){
   bool result = false;
   const char* log = NULL;
 
-  _dynamixel.begin();
+  dynamixel_.begin();
 
-  result = _dxl_wb->addSyncWriteHandler(_control_items["Goal_Position"]->address, _control_items["Goal_Position"]->data_length, &log);
+  result = dxl_wb_->addSyncWriteHandler(control_items_["Goal_Position"]->address, control_items_["Goal_Position"]->data_length, &log);
 
   if(result == false){
-    RCLCPP_ERROR(_logger, "%s", log);
+    RCLCPP_ERROR(logger_, "%s", log);
     return result;
   }
 
-  RCLCPP_INFO(_logger, "%s", log);
+  RCLCPP_INFO(logger_, "%s", log);
 
-  result = _dxl_wb->addSyncWriteHandler(_control_items["Goal_Velocity"]->address, _control_items["Goal_Velocity"]->data_length, &log);
+  result = dxl_wb_->addSyncWriteHandler(control_items_["Goal_Velocity"]->address, control_items_["Goal_Velocity"]->data_length, &log);
 
   if(result == false){
-    RCLCPP_ERROR(_logger, "%s", log);
+    RCLCPP_ERROR(logger_, "%s", log);
     return result;
   }
 
-  RCLCPP_INFO(_logger, "%s", log);
+  RCLCPP_INFO(logger_, "%s", log);
 
-  result = _dxl_wb->addSyncWriteHandler(_control_items["Goal_Current"]->address, _control_items["Goal_Current"]->data_length, &log);
+  result = dxl_wb_->addSyncWriteHandler(control_items_["Goal_Current"]->address, control_items_["Goal_Current"]->data_length, &log);
   
   if(result == false){
-    RCLCPP_ERROR(_logger, "%s", log);
+    RCLCPP_ERROR(logger_, "%s", log);
     return result;
   }
 
-  RCLCPP_INFO(_logger, "%s", log);
+  RCLCPP_INFO(logger_, "%s", log);
 
-  if(_dxl_wb->getProtocolVersion() == 2.0f){
-    uint16_t start_address = std::min(_control_items["Present_Position"]->address, _control_items["Present_Current"]->address);
+  if(dxl_wb_->getProtocolVersion() == 2.0f){
+    uint16_t start_address = std::min(control_items_["Present_Position"]->address, control_items_["Present_Current"]->address);
 
     /* As some models have an empty space between Present_Velocity and Present Current, read_length is modified as below.*/
-    // uint16_t read_length = _control_items["Present_Position"]->data_length + _control_items["Present_Velocity"]->data_length + _control_items["Present_Current"]->data_length;
-    int read_length = _control_items["Present_Position"]->data_length + _control_items["Present_Velocity"]->data_length + _control_items["Present_Current"]->data_length + 2;
+    // uint16_t read_length = control_items_["Present_Position"]->data_length + control_items_["Present_Velocity"]->data_length + control_items_["Present_Current"]->data_length;
+    int read_length = control_items_["Present_Position"]->data_length + control_items_["Present_Velocity"]->data_length + control_items_["Present_Current"]->data_length + 2;
 
-    result = _dxl_wb->addSyncReadHandler(
+    result = dxl_wb_->addSyncReadHandler(
       start_address,
       (uint16_t)read_length,
       &log
     );
 
     if(result == false){
-      RCLCPP_ERROR(_logger, "%s", log);
+      RCLCPP_ERROR(logger_, "%s", log);
       return result;
     }
   }

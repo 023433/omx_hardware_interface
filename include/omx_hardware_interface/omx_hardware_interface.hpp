@@ -70,21 +70,28 @@ private:
   bool initControlItems(void);
   bool initSDKHandlers(void);
 
-  rclcpp::Node::SharedPtr& _node;
-  rclcpp::Logger _logger;
+  rclcpp::Node::SharedPtr& node_;
+  rclcpp::Logger logger_;
 
   // ROS Parameters
-  std::string _port_name;
-  int64_t _baud_rate;
-  std::string _yaml_file;
+  std::string port_name_;
+  int64_t baud_rate_;
+  std::string yaml_file_;
   std::string _interface;
 
   // Variables
-  DynamixelWorkbench *_dxl_wb;
-  std::map<std::string, uint32_t> _dynamixel;
-  std::map<std::string, const ControlItem*> _control_items;
-  std::vector<std::pair<std::string, ItemValue>> _dynamixel_info;
-  std::vector<Joint> _joints;
+  DynamixelWorkbench *dxl_wb_;
+  std::map<std::string, uint32_t> dynamixel_;
+  std::map<std::string, const ControlItem*> control_items_;
+  std::vector<std::pair<std::string, ItemValue>> dynamixel_info_;
+  std::vector<Joint> joints_;
+
+  std::vector<double> joint_positions_;
+  std::vector<double> joint_velocities_;
+  std::vector<double> joint_efforts_;
+  std::vector<double> joint_position_commands_;
+  std::vector<double> joint_velocity_commands_;
+  std::vector<double> joint_effort_commands_;
 
 };
 
