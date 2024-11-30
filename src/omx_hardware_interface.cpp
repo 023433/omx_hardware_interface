@@ -222,15 +222,15 @@ void HardwareInterface::registerActuatorInterfaces(){
     return;
   }
 
-  // if(!initControlItems()){
-  //   RCLCPP_ERROR(logger, "Please check control items");
-  //   return;
-  // }
+  if(!initControlItems()){
+    RCLCPP_ERROR(logger_, "Please check control items");
+    return;
+  }
 
-  // if(!initSDKHandlers()){
-  //   RCLCPP_ERROR(logger, "Failed to set Dynamixel SDK Handler");
-  //   return;
-  // }
+  if(!initSDKHandlers()){
+    RCLCPP_ERROR(logger_, "Failed to set Dynamixel SDK Handler");
+    return;
+  }
 }
 
 
