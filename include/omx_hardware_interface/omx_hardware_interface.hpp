@@ -29,21 +29,18 @@
 
 #include "dynamixel_workbench_toolbox/dynamixel_workbench.h"
 
-typedef struct _ItemValue
-{
+typedef struct _ItemValue{
   std::string item_name;
   int32_t value;
 } ItemValue;
 
-typedef struct _WayPoint
-{
+typedef struct _WayPoint{
   double position;
   double velocity;
   double acceleration;
 } WayPoint;
 
-typedef struct _Joint
-{
+typedef struct _Joint{
   double position;
   double velocity;
   double current;
@@ -53,10 +50,10 @@ typedef struct _Joint
   double effort_command;
 } Joint;
 
-namespace omx_hardware_interface
-{
-class HardwareInterface : public hardware_interface::ResourceManager
-{
+namespace omx_hardware_interface{
+
+class HardwareInterface : public hardware_interface::ResourceManager{
+
 public:
   HardwareInterface(rclcpp::Node::SharedPtr& ne);
   ~HardwareInterface() {}
