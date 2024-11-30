@@ -207,10 +207,10 @@ void HardwareInterface::registerActuatorInterfaces(){
     return;
   }
 
-  // if(!getDynamixelsInfo(yaml_file_)){
-  //   RCLCPP_ERROR(logger, "Please check YAML file");
-  //   return;
-  // }
+  if(!getDynamixelsInfo(_yaml_file)){
+    RCLCPP_ERROR(_logger, "Please check YAML file");
+    return;
+  }
 
 
   // if(!loadDynamixels()){
@@ -284,6 +284,40 @@ bool HardwareInterface::initWorkbench(const std::string port_name, const uint32_
   }
 
   return result;
+}
+
+
+bool HardwareInterface::getDynamixelsInfo(const std::string yaml_file){
+  YAML::Node dynamixel;
+  dynamixel = YAML::LoadFile(yaml_file.c_str());
+
+  if(dynamixel.IsNull()){
+    RCLCPP_ERROR(_logger, "Please check YAML file");
+    return false;
+  }
+
+  for (YAML::const_iterator it_file = dynamixel.begin(); it_file != dynamixel.end(); it_file++){
+    std::string name = it_file->first.as<std::string>();
+    if (name.size() == 0){
+      continue;
+    }
+
+    YAML::Node item = dynamixel[name];
+    for (YAML::const_iterator it_item = item.begin(); it_item != item.end(); it_item++){
+      std::string item_name = it_item->first.as<std::string>();
+      int32_t value = it_item->second.as<int32_t>();
+
+      if (item_name == "ID")
+        _dynamixel[name] = value;
+
+      ItemValue item_value = {item_name, value};
+      std::pair<std::string, ItemValue> info(name, item_value);
+
+      _dynamixel_info.push_back(info);
+    }
+  }
+
+  return true;
 }
 
 

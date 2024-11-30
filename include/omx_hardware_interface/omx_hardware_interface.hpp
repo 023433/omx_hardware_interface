@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#include <yaml-cpp/yaml.h>
 #include <rclcpp/rclcpp.hpp>
 #include "hardware_interface/resource_manager.hpp"
 #include "hardware_interface/handle.hpp"
@@ -66,7 +67,7 @@ private:
   void registerActuatorInterfaces();
   void registerControlInterfaces();
   bool initWorkbench(const std::string port_name, const uint32_t baud_rate);
-  // bool getDynamixelsInfo(const std::string yaml_file);
+  bool getDynamixelsInfo(const std::string yaml_file);
   // bool loadDynamixels(void);
   // bool initDynamixels(void);
   // bool initControlItems(void);
