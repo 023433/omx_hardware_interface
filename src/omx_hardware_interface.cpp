@@ -48,10 +48,10 @@ HardwareInterface::HardwareInterface(rclcpp::Node::SharedPtr& node) : _node(node
 
 
   // 로그 출력
-  RCLCPP_INFO(_node->get_logger(), "usb_port: %s", _port_name.c_str());
-  RCLCPP_INFO(_node->get_logger(), "baud_rate: %ld", _baud_rate);
-  RCLCPP_INFO(_node->get_logger(), "yaml_file: %s", _yaml_file.c_str());
-  RCLCPP_INFO(_node->get_logger(), "interface: %s", _interface.c_str());
+  RCLCPP_INFO(_logger, "usb_port: %s", _port_name.c_str());
+  RCLCPP_INFO(_logger, "baud_rate: %ld", _baud_rate);
+  RCLCPP_INFO(_logger, "yaml_file: %s", _yaml_file.c_str());
+  RCLCPP_INFO(_logger, "interface: %s", _interface.c_str());
   registerActuatorInterfaces();
   // registerControlInterfaces();
 }
@@ -61,7 +61,7 @@ void HardwareInterface::read(){
   const char* log = NULL;
   size_t _dynamixelsize = _dynamixel.size();
 
-  RCLCPP_INFO(_node->get_logger(), "_dynamixelsize: %ld", _dynamixelsize);
+  RCLCPP_INFO(_logger, "_dynamixelsize: %ld", _dynamixelsize);
 
   int32_t get_position[_dynamixelsize];
   int32_t get_velocity[_dynamixelsize];
@@ -446,27 +446,27 @@ bool HardwareInterface::initSDKHandlers(void){
   if(result == false){
     RCLCPP_ERROR(_logger, "%s", log);
     return result;
-  }else{
-    RCLCPP_INFO(_logger, "%s", log);
   }
+
+  RCLCPP_INFO(_logger, "%s", log);
 
   result = _dxl_wb->addSyncWriteHandler(_control_items["Goal_Velocity"]->address, _control_items["Goal_Velocity"]->data_length, &log);
 
   if(result == false){
     RCLCPP_ERROR(_logger, "%s", log);
     return result;
-  }else{
-    RCLCPP_INFO(_logger, "%s", log);
   }
+
+  RCLCPP_INFO(_logger, "%s", log);
 
   result = _dxl_wb->addSyncWriteHandler(_control_items["Goal_Current"]->address, _control_items["Goal_Current"]->data_length, &log);
   
   if(result == false){
     RCLCPP_ERROR(_logger, "%s", log);
     return result;
-  }else{
-    RCLCPP_INFO(_logger, "%s", log);
   }
+
+  RCLCPP_INFO(_logger, "%s", log);
 
   if(_dxl_wb->getProtocolVersion() == 2.0f){
     uint16_t start_address = std::min(_control_items["Present_Position"]->address, _control_items["Present_Current"]->address);
