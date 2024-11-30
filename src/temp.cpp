@@ -11,8 +11,8 @@ void timerCallback(
   rclcpp::Duration elapsed_time = curr_time - last_time;
   last_time = curr_time;
 
-  hardware_interface->read();
-  hardware_interface->write();
+  // hardware_interface->read();
+  // hardware_interface->write();
 }
 
 int main(int argc, char **argv){

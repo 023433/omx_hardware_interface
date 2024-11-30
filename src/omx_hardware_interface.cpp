@@ -53,7 +53,7 @@ HardwareInterface::HardwareInterface(rclcpp::Node::SharedPtr& node) : node_(node
   RCLCPP_INFO(logger_, "yaml_file: %s", yaml_file_.c_str());
   RCLCPP_INFO(logger_, "interface: %s", _interface.c_str());
   registerActuatorInterfaces();
-  // registerControlInterfaces();
+  registerControlInterfaces();
 }
 
 void HardwareInterface::read(){
@@ -327,6 +327,7 @@ bool HardwareInterface::loadDynamixels(void){
   for(auto const& dxl:dynamixel_){
     uint16_t model_number = 0;
     result = dxl_wb_->ping((uint8_t)dxl.second, &model_number, &log);
+    dxl_wb_->ledOn((uint8_t)dxl.second);
     if(result == false){
       RCLCPP_ERROR(logger_, "%s", log);
       RCLCPP_ERROR(logger_, "Can't find Dynamixel ID '%d'", dxl.second);
