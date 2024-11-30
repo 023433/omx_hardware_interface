@@ -70,7 +70,7 @@ private:
   bool getDynamixelsInfo(const std::string yaml_file);
   bool loadDynamixels(void);
   bool initDynamixels(void);
-  // bool initControlItems(void);
+  bool initControlItems(void);
   // bool initSDKHandlers(void);
 
   rclcpp::Node::SharedPtr& _node;

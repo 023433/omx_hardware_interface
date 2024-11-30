@@ -369,6 +369,76 @@ bool HardwareInterface::initDynamixels(void){
   return true;
 }
 
+bool HardwareInterface::initControlItems(void){
+  bool result = false;
+  const char* log = NULL;
+
+  auto it = _dynamixel.begin();
+
+  const ControlItem *goal_position = _dxl_wb->getItemInfo(it->second, "Goal_Position");
+
+  if(goal_position == NULL) {
+    return false;
+  }
+
+  const ControlItem *goal_velocity = _dxl_wb->getItemInfo(it->second, "Goal_Velocity");
+  
+  if(goal_velocity == NULL){
+    goal_velocity = _dxl_wb->getItemInfo(it->second, "Moving_Speed");
+  }
+
+  if(goal_velocity == NULL){
+    return false;
+  }
+
+  const ControlItem *goal_current = _dxl_wb->getItemInfo(it->second, "Goal_Current");
+  
+  if(goal_current == NULL){
+    goal_current = _dxl_wb->getItemInfo(it->second, "Present_Load");
+  }
+
+  if(goal_current == NULL){
+    return false;
+  }
+
+  const ControlItem *present_position = _dxl_wb->getItemInfo(it->second, "Present_Position");
+  
+  if(present_position == NULL){
+    return false;
+  }
+
+  const ControlItem *present_velocity = _dxl_wb->getItemInfo(it->second, "Present_Velocity");
+  
+  if(present_velocity == NULL){
+    present_velocity = _dxl_wb->getItemInfo(it->second, "Present_Speed");
+  }
+
+  if(present_velocity == NULL){
+    return false;
+  }
+
+  const ControlItem *present_current = _dxl_wb->getItemInfo(it->second, "Present_Current");
+  
+  if(present_current == NULL){
+    present_current = _dxl_wb->getItemInfo(it->second, "Present_Load");
+  }
+
+  if(present_current == NULL){
+    return false;
+  }
+
+  _control_items["Goal_Position"] = goal_position;
+  _control_items["Goal_Velocity"] = goal_velocity;
+  _control_items["Goal_Current"] = goal_current;
+
+  _control_items["Present_Position"] = present_position;
+  _control_items["Present_Velocity"] = present_velocity;
+  _control_items["Present_Current"] = present_current;
+
+  return true;
+}
+
+
 
 
 }  // namespace omx_hardware_interface
