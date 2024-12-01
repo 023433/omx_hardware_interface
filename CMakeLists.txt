@@ -26,13 +26,14 @@ find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(dynamixel_workbench_toolbox REQUIRED)
+find_package(controller_manager REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 include_directories(
   include
   ${YAML_CPP_INCLUDE_DIRS}
 )
-
+# add_compile_options(-Wno-shadow)
 add_executable(temp src/temp.cpp src/omx_hardware_interface.cpp)
 ament_target_dependencies(
   temp
@@ -40,6 +41,7 @@ ament_target_dependencies(
   rclcpp
   rclcpp_lifecycle
   dynamixel_workbench_toolbox
+  controller_manager
   yaml-cpp
 )
 target_link_libraries(temp ${YAML_CPP_LIBRARIES})

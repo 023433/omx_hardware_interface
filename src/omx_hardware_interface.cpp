@@ -24,18 +24,6 @@ namespace omx_hardware_interface
 {
 
 HardwareInterface::HardwareInterface(rclcpp::Node::SharedPtr& node) : node_(node), logger_(node->get_logger()){
-    /************************************************************
-  ** Initialize ROS parameters
-  ************************************************************/
-  // port_name_ = priv_node_handle_.param<std::string>("usb_port", "/dev/ttyUSB0");
-  // baud_rate_ = priv_node_handle_.param<int32_t>("baud_rate", 1000000);
-  // yaml_file_ = priv_node_handle_.param<std::string>("yaml_file", "");
-  // interface_ = priv_node_handle_.param<std::string>("interface", "position");
-
-  /************************************************************
-  ** Register Interfaces
-  ************************************************************/
-
   node_->declare_parameter<std::string>("usb_port", "/dev/ttyUSB0");
   node_->declare_parameter<int>("baud_rate", 1000000);
   node_->declare_parameter<std::string>("yaml_file", "");
@@ -46,12 +34,11 @@ HardwareInterface::HardwareInterface(rclcpp::Node::SharedPtr& node) : node_(node
   yaml_file_ = node->get_parameter("yaml_file").as_string();
   _interface = node->get_parameter("interface").as_string();
 
-
-  // 로그 출력
   RCLCPP_INFO(logger_, "usb_port: %s", port_name_.c_str());
   RCLCPP_INFO(logger_, "baud_rate: %ld", baud_rate_);
   RCLCPP_INFO(logger_, "yaml_file: %s", yaml_file_.c_str());
   RCLCPP_INFO(logger_, "interface: %s", _interface.c_str());
+
   registerActuatorInterfaces();
   registerControlInterfaces();
 }
@@ -60,8 +47,6 @@ void HardwareInterface::read(){
   bool result = false;
   const char* log = NULL;
   size_t _dynamixelsize = dynamixel_.size();
-
-  RCLCPP_INFO(logger_, "_dynamixelsize: %ld", _dynamixelsize);
 
   int32_t get_position[_dynamixelsize];
   int32_t get_velocity[_dynamixelsize];
@@ -153,7 +138,6 @@ void HardwareInterface::read(){
 
     joints_[arIdx].position_command = joints_[arIdx].position;
   }
-
 }
 
 void HardwareInterface::write(){

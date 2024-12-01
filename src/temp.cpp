@@ -1,4 +1,5 @@
 #include "omx_hardware_interface/omx_hardware_interface.hpp"
+// #include <controller_manager/controller_manager.hpp>
 
 using namespace omx_hardware_interface;
 
@@ -11,8 +12,9 @@ void timerCallback(
   rclcpp::Duration elapsed_time = curr_time - last_time;
   last_time = curr_time;
 
-  // hardware_interface->read();
-  // hardware_interface->write();
+  hardware_interface->read();
+  // cm->update(curr_time, elapsed_time);
+  hardware_interface->write();
 }
 
 int main(int argc, char **argv){
@@ -24,6 +26,7 @@ int main(int argc, char **argv){
 
   // Initialize hardware interface and controller manager
   auto hardware_interface = std::make_shared<HardwareInterface>(node);
+  // auto cm = std::make_shared<controller_manager::ControllerManager>(hardware_interface, node);
 
   // Timer variables
   rclcpp::Time last_time = node->now();
@@ -32,8 +35,8 @@ int main(int argc, char **argv){
   // Create timer with 10ms interval
   auto timer = node->create_wall_timer(
     std::chrono::milliseconds(10),
-    [hardware_interface,  &last_time, clock]() {
-      timerCallback(hardware_interface,  last_time, clock);
+    [hardware_interface, &last_time, clock]() {
+      timerCallback(hardware_interface, last_time, clock);
     }
   );
 
